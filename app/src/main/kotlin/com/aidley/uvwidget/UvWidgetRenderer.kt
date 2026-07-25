@@ -36,7 +36,7 @@ object UvWidgetRenderer {
             setInt(R.id.uv_background, "setColorFilter", color)
             setTextViewText(R.id.uv_value, formatUvIndex(state.uvIndex))
             setContentDescription(R.id.uv_root, describe(context, state))
-            setOnClickPendingIntent(R.id.uv_root, refreshIntent(context))
+            setOnClickPendingIntent(R.id.uv_root, settingsIntent(context))
         }
 
     /** The UV index is conventionally reported as a whole number. */
@@ -52,12 +52,18 @@ object UvWidgetRenderer {
         else -> context.getString(R.string.description_uv, formatUvIndex(state.uvIndex))
     }
 
-    /** Tapping the widget asks for an immediate refresh. */
-    private fun refreshIntent(context: Context): PendingIntent {
-        val intent = Intent(context, UvWidgetProvider::class.java).apply {
-            action = UvWidgetProvider.ACTION_REFRESH
+    /**
+     * Tapping the widget opens the settings screen.
+     *
+     * Opening settings also refreshes the cached location fix, which is the one thing the widget
+     * cannot do for itself in the background — so this is the more useful tap of the two. The
+     * broadcast refresh remains available via [UvWidgetProvider.ACTION_REFRESH].
+     */
+    private fun settingsIntent(context: Context): PendingIntent {
+        val intent = Intent(context, ConfigActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getActivity(
             context,
             0,
             intent,

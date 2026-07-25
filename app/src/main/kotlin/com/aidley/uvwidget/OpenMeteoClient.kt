@@ -57,12 +57,15 @@ object OpenMeteoClient {
     }
 
     /**
-     * Two days of hourly values starting at 00:00 UTC today, which always brackets "now" and
-     * leaves usable data if a refresh is missed overnight.
+     * Two days of hourly values plus yesterday, which always brackets "now" and leaves usable data
+     * if a refresh is missed overnight.
+     *
+     * The past day matters for the graph, not the widget: forecast days begin at 00:00 UTC, so
+     * without it a user far enough east of Greenwich would have no data for their own morning.
      */
     internal fun buildUrl(location: Coordinates): String = String.format(
         Locale.US,
-        "%s?latitude=%.4f&longitude=%.4f&hourly=uv_index&timeformat=unixtime&forecast_days=2",
+        "%s?latitude=%.4f&longitude=%.4f&hourly=uv_index&timeformat=unixtime&forecast_days=2&past_days=1",
         ENDPOINT,
         location.latitude,
         location.longitude

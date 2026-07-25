@@ -3,8 +3,12 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!--
+        Coarse only, deliberately. The system fuzzes coarse fixes to roughly 2km, and UV varies
+        over tens of kilometres, so a precise fix would buy nothing. Declaring only this means the
+        permission dialog offers Approximate alone, with no Precise option to decline.
+    -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- Location is a convenience, not a requirement: a location can be typed in by hand. -->
     <uses-feature

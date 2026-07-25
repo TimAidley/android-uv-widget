@@ -8,16 +8,38 @@ The widget is a single coloured tile with the UV index in black:
 - **Green → yellow → orange → red** through the day, as the UV index rises from low to extreme.
 - **Grey** before the first forecast arrives, or if no location has been set.
 
-Tap the widget to refresh it immediately.
+Tap the widget to open its settings, which also refreshes your location and shows the day's UV
+curve.
+
+## The graph
+
+The settings screen opens with twelve hours of UV index drawn as a curve, filled underneath with
+the same colours the widget uses, so the shape and the colour say the same thing.
+
+- The **hourly forecast points are joined with a monotone cubic curve**, not straight lines, so
+  the shape matches the interpolated value the widget actually reports between hours.
+- **A vertical line marks now**, with the current UV index beside it.
+- **Touch and drag** anywhere on the graph for a dotted line and the UV index at that moment. It
+  disappears when you lift your finger.
+- **Hours are marked every three hours**, on the clock, in your device's 12- or 24-hour format.
+- The **vertical axis fits the day's peak**, but never tops out below 4 — otherwise a winter peak
+  of 1 would be magnified into a mountain.
+
+Twelve hours is less than a day, so the window has to be placed. It is chosen to contain as much
+daylight as possible — the dark hours are a flat line at zero and say nothing — subject to the
+"now" line never coming closer than a quarter of the width to either edge, which always leaves
+room to see what is coming. Where those two conflict, the edge rule wins.
 
 ## How it works
 
 | Concern | Approach |
 | --- | --- |
-| UV data | [Open-Meteo air-quality API](https://open-meteo.com/en/docs/air-quality-api) — free, no API key, nothing to register |
+| UV data | [Open-Meteo air-quality API](https://open-meteo.com/en/docs/air-quality-api) — free, no API key, nothing to register. Yesterday plus two forecast days, so the graph has hours on both sides of now wherever you are |
+| Graph | A custom `View` drawn on a `Canvas`, sampled once per pixel column rather than joined point to point |
 | Sunrise / sunset | Calculated on device from the NOAA solar equations, so the colour stays correct even while showing cached data |
-| Location | Platform `LocationManager` (no Google Play Services), with a manually entered fallback |
-| Refresh | WorkManager, every 30 minutes, plus on tap and when the widget is added |
+| Location | Platform `LocationManager` (no Google Play Services), approximate only, with a manually entered fallback |
+| Place name | `Geocoder`, for display in the settings screen only — the widget never depends on it |
+| Refresh | WorkManager, every 30 minutes, and when the widget is added |
 | Widget | Classic `AppWidgetProvider` + `RemoteViews` — no Compose, so the APK stays small |
 
 The forecast is fetched hourly and interpolated between hours, so the colour drifts smoothly
@@ -30,9 +52,30 @@ the special background-location permission. Rather than ask for that, this app c
 while its settings screen is open and the widget's background refresh reuses it. Open the app
 again after travelling a long way, or set a fixed location by hand.
 
+That is why the settings screen goes after a fix as soon as it opens, rather than waiting to be
+asked: being open is the entire opportunity to get one. It shows the location the system already
+has immediately and upgrades it when a fresh fix arrives, so there is nothing to wait for in the
+common case; a fresh fix is given ten seconds before it falls back to the last known one.
+
+### Approximate location
+
+The app requests `ACCESS_COARSE_LOCATION` only, so the permission dialog offers **Approximate**
+with no precise option. Android takes the real fix and degrades it in software — a random offset
+regenerated roughly hourly, snapped to a ~2 km grid — rather than switching to a coarser way of
+sensing. Nothing is lost here: UV forecasts vary over tens of kilometres, so 2 km of fuzz sits far
+below the resolution of the data.
+
+Note that this is a privacy choice, not a battery one. Power depends on which provider is asked,
+not which permission is held, which is why `LocationSource` prefers `NETWORK_PROVIDER` (wifi and
+cell lookup) over GPS.
+
 ## Building
 
 Requires the Android SDK (platform 35) and JDK 17.
+
+Targeting SDK 35 opts into Android 15's edge-to-edge enforcement, so the settings screen sets
+`fitsSystemWindows` on its root: without it the window draws behind the status and action bars and
+the first heading disappears underneath them.
 
 ```bash
 ./gradlew assembleDebug          # build the APK
@@ -40,8 +83,10 @@ Requires the Android SDK (platform 35) and JDK 17.
 ./gradlew test                   # run the unit tests
 ```
 
-Then long-press the home screen, pick **UV Index** from the widget list, and choose a location
-when the settings screen appears.
+Then long-press the home screen, pick **UV Index** from the widget list, and allow location access
+when the settings screen appears. The settings screen shows the detected place name alongside the
+coordinates. To pin the widget to a fixed point instead, tick **Set my location manually** and
+enter coordinates; Save refuses, and says why, if it has no location to use.
 
 ## Colour ramp
 
@@ -65,4 +110,8 @@ ramp keeps at least 4.5:1 contrast against the black text, which is checked by a
   Sydney and Tromsø, including polar day and polar night;
 - the colour ramp — direction, continuity, and black-text contrast;
 - Open-Meteo response parsing, including hours the API returns as `null`;
-- what the widget decides to show: cached, stale, expired, wrong-location, and unconfigured.
+- what the widget decides to show: cached, stale, expired, wrong-location, and unconfigured;
+- the graph's curve — that it passes through the hourly points, stays monotone between them, and
+  never dips below zero, which a plain cubic spline does around sunrise;
+- the graph's twelve-hour window — that it keeps "now" out of the outer quarter at every hour of
+  the day, shifts towards the daylight, and centres itself through polar day and polar night.

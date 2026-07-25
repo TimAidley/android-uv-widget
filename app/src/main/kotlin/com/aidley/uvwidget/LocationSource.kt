@@ -8,9 +8,13 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.os.CancellationSignal
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Reads the device's location using the platform LocationManager.
@@ -25,6 +29,9 @@ object LocationSource {
 
     /** Older fixes than this are ignored when picking the best last-known location. */
     private const val MAX_FIX_AGE_MILLIS = 6L * 60L * 60L * 1000L
+
+    /** Longest to wait for a fresh fix before falling back to the last known one. */
+    private const val DEFAULT_TIMEOUT_MILLIS = 10_000L
 
     fun hasLocationPermission(context: Context): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
@@ -69,9 +76,18 @@ object LocationSource {
 
     /**
      * Asks for a single fresh fix. Call from the foreground only; [onResult] runs on the main
-     * thread and receives null if no fix arrives.
+     * thread, exactly once, and receives null if no fix arrives.
+     *
+     * The platform's own timeout for a current-location request is around thirty seconds, which
+     * is far longer than anyone will sit and watch. [timeoutMillis] caps the wait and falls back
+     * to the last known fix instead — for a forecast covering tens of kilometres, a slightly old
+     * position is worth far more than a precise one that arrives half a minute late.
      */
-    fun requestSingleUpdate(context: Context, onResult: (Coordinates?) -> Unit) {
+    fun requestSingleUpdate(
+        context: Context,
+        timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
+        onResult: (Coordinates?) -> Unit
+    ) {
         if (!hasLocationPermission(context)) {
             onResult(null)
             return
@@ -92,15 +108,37 @@ object LocationSource {
             return
         }
 
+        val handler = Handler(Looper.getMainLooper())
+        val delivered = AtomicBoolean(false)
+        val cancellation = CancellationSignal()
+        var legacyListener: LocationListener? = null
+
+        // Every path below funnels through here, so the caller is called back exactly once
+        // however the race between the fresh fix and the timeout turns out.
+        fun deliver(coordinates: Coordinates?) {
+            if (!delivered.compareAndSet(false, true)) return
+            handler.removeCallbacksAndMessages(null)
+            legacyListener?.let { listener ->
+                runCatching { manager.removeUpdates(listener) }
+                    .onFailure { Log.w(TAG, "Could not remove location updates", it) }
+            }
+            onResult(coordinates)
+        }
+
+        handler.postDelayed({
+            // Out of time: take whatever the providers had already, rather than keep waiting.
+            cancellation.cancel()
+            deliver(lastKnownLocation(context))
+        }, timeoutMillis)
+
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 manager.getCurrentLocation(
                     provider,
-                    null,
+                    cancellation,
                     ContextCompat.getMainExecutor(context)
                 ) { location ->
-                    onResult(location?.let { Coordinates(it.latitude, it.longitude) }?.takeIf { it.isValid }
-                        ?: lastKnownLocation(context))
+                    deliver(location?.toCoordinates() ?: lastKnownLocation(context))
                 }
             } else {
                 // Implemented explicitly rather than as a lambda: before API 29 the callbacks
@@ -108,10 +146,7 @@ object LocationSource {
                 // AbstractMethodError the first time the platform reported a status change.
                 val listener = object : LocationListener {
                     override fun onLocationChanged(location: Location) {
-                        onResult(
-                            Coordinates(location.latitude, location.longitude).takeIf { it.isValid }
-                                ?: lastKnownLocation(context)
-                        )
+                        deliver(location.toCoordinates() ?: lastKnownLocation(context))
                     }
 
                     @Deprecated("Required by LocationListener before API 29")
@@ -121,14 +156,18 @@ object LocationSource {
 
                     override fun onProviderDisabled(provider: String) = Unit
                 }
+                legacyListener = listener
                 @Suppress("DEPRECATION")
                 manager.requestSingleUpdate(provider, listener, context.mainLooper)
             }
         } catch (e: SecurityException) {
             Log.w(TAG, "Location update refused", e)
-            onResult(null)
+            deliver(null)
         }
     }
+
+    private fun Location.toCoordinates(): Coordinates? =
+        Coordinates(latitude, longitude).takeIf { it.isValid }
 
     /** Prefer the more accurate fix, falling back to the more recent one. */
     private fun isBetterThan(candidate: Location, current: Location): Boolean = when {
