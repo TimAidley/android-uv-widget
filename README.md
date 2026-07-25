@@ -11,6 +11,27 @@ The widget is a single coloured tile with the UV index in black:
 Tap the widget to open its settings, which also refreshes your location and shows the day's UV
 curve.
 
+## Installing
+
+Download the APK from the [latest release](https://github.com/TimAidley/android-uv-widget/releases/latest)
+and open it on your phone. Android will ask permission to install from this source the first time;
+that setting is per-app, granted to whichever browser or file manager you opened it with.
+
+Then long-press the home screen, choose **Widgets**, find **UV Index**, and drag it out. The
+settings screen appears — allow location access, or tick **Set my location manually** and enter
+coordinates.
+
+If you have previously installed a debug build, the install will be refused: Android identifies an
+app by its signing key, and release builds are signed with a different one. Uninstall the old copy
+first. Note that uninstalling from the launcher only removes it for the profile you are using, so
+on a phone with more than one user the package can survive. To remove it everywhere:
+
+```bash
+adb shell pm uninstall com.aidley.uvwidget
+```
+
+Releases after the first upgrade in place, since they all share the same key.
+
 ## The graph
 
 The settings screen opens with twelve hours of UV index drawn as a curve, filled underneath with
