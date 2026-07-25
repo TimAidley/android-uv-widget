@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The background is an ImageView holding a white rounded rectangle, tinted at runtime with a
+    colour filter. RemoteViews can only set a flat colour on a real background, which would lose
+    the rounded corners, so the shape is drawn as an image instead.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/uv_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/widget_margin">
+
+    <ImageView
+        android:id="@+id/uv_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_background" />
+
+    <!--
+        Auto-sizing rather than a fixed size: the widget is resizable, and a two-digit index
+        at a fixed 32sp would be clipped in a single home-screen cell.
+    -->
+    <TextView
+        android:id="@+id/uv_value"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:autoSizeMaxTextSize="48sp"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeStepGranularity="1sp"
+        android:autoSizeTextType="uniform"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:padding="4dp"
+        android:text="@string/no_value"
+        android:textColor="@android:color/black"
+        android:textStyle="bold" />
+
+</FrameLayout>

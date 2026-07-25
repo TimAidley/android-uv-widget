@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DayNight only exists from API 29; older devices keep the light theme above. -->
+    <style name="Theme.UvWidget" parent="@android:style/Theme.DeviceDefault.DayNight" />
+</resources>

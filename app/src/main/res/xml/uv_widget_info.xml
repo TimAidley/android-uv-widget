@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    updatePeriodMillis is 0 on purpose: the platform's own widget updates are capped at 30
+    minutes, wake the device, and cannot be triggered on demand. UvRefreshWorker handles
+    refreshes instead.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.aidley.uvwidget.ConfigActivity"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_uv"
+    android:minHeight="40dp"
+    android:minWidth="40dp"
+    android:previewImage="@drawable/widget_preview"
+    android:previewLayout="@layout/widget_uv"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="1"
+    android:targetCellWidth="1"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />
