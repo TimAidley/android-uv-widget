@@ -99,12 +99,16 @@ test reports as artifacts — the reports being far more use than the log when s
 Releases are built by `.github/workflows/release.yml` when a `v*` tag is pushed.
 
 1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and commit.
-2. Tag and push:
+2. Tag and push, either from the command line:
 
    ```bash
    git tag v1.1.0
    git push origin v1.1.0
    ```
+
+   or from the Releases page on GitHub — *Draft a new release*, type the tag, choose *Create new
+   tag on publish*, and publish. The workflow attaches the APK to the release that page has
+   already created, rather than trying to create a second one.
 
 The workflow then checks the tag matches `versionName` and **fails if it does not**, so a
 forgotten bump cannot ship a `v1.1.0` tag containing an APK calling itself 1.1.0's predecessor. It

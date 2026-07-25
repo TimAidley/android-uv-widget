@@ -69,14 +69,23 @@ jobs:
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk "dist/uv-widget-${GITHUB_REF_NAME}.apk"
 
+      # A tag can arrive two ways: pushed from the command line, or created by the web UI, which
+      # makes the tag and the release in one go. Attach to an existing release rather than
+      # failing on it, so either route ends with the APK on the release.
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "$GITHUB_REF_NAME" \
-            --generate-notes \
-            "dist/uv-widget-${GITHUB_REF_NAME}.apk"
+          asset="dist/uv-widget-${GITHUB_REF_NAME}.apk"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists — attaching the APK to it"
+            gh release upload "$GITHUB_REF_NAME" "$asset" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes \
+              "$asset"
+          fi
 
       - name: Remove the keystore
         if: always()
