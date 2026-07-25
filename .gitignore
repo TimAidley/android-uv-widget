@@ -12,3 +12,8 @@ local.properties
 /app/release
 *.apk
 *.aab
+
+# Signing keys never belong in the repository, however briefly.
+*.jks
+*.keystore
+keystore.properties

@@ -88,6 +88,10 @@ class ConfigActivity : ComponentActivity() {
         findViewById<Button>(R.id.refresh_location).setOnClickListener { ensureLocationPermission() }
         findViewById<Button>(R.id.save).setOnClickListener { save() }
 
+        // The code, not just the name: it is what tells two builds of the same version apart.
+        findViewById<TextView>(R.id.version).text =
+            getString(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+
         // Go after a fix on arrival. In manual mode take one silently if the permission is
         // already granted — it keeps the cache warm — but never prompt for it there.
         when {

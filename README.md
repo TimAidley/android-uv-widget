@@ -88,6 +88,60 @@ when the settings screen appears. The settings screen shows the detected place n
 coordinates. To pin the widget to a fixed point instead, tick **Set my location manually** and
 enter coordinates; Save refuses, and says why, if it has no location to use.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main`, on every pull request, and on demand from
+the Actions tab. It runs the unit tests, builds the debug APK, and uploads both the APK and the
+test reports as artifacts — the reports being far more use than the log when something fails.
+
+## Releasing
+
+Releases are built by `.github/workflows/release.yml` when a `v*` tag is pushed.
+
+1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and commit.
+2. Tag and push:
+
+   ```bash
+   git tag v1.1.0
+   git push origin v1.1.0
+   ```
+
+The workflow then checks the tag matches `versionName` and **fails if it does not**, so a
+forgotten bump cannot ship a `v1.1.0` tag containing an APK calling itself 1.1.0's predecessor. It
+runs the tests, builds a signed release APK, verifies with `apksigner` that it really is signed,
+and publishes a GitHub Release with the APK attached and generated notes.
+
+The version is shown at the bottom of the settings screen, name and code both — the code is what
+distinguishes two builds that call themselves the same version.
+
+### Signing
+
+Release signing comes from four repository secrets. The build reads them from the environment, so
+no key material is ever in the repository:
+
+| Secret | What it is |
+| --- | --- |
+| `KEYSTORE_BASE64` | The keystore file, base64-encoded |
+| `KEYSTORE_PASSWORD` | Password for the keystore |
+| `KEY_ALIAS` | Alias of the key inside it |
+| `KEY_PASSWORD` | Password for that key |
+
+To create a keystore:
+
+```bash
+keytool -genkeypair -v -keystore uv-widget.jks -alias uv-widget \
+  -keyalg RSA -keysize 4096 -validity 10000
+base64 -w0 uv-widget.jks    # paste into the KEYSTORE_BASE64 secret
+```
+
+**Keep the keystore safe and backed up.** Android identifies an app by its signing key, so a
+release signed with a different key cannot be installed over an existing one — the upgrade is
+refused and the app has to be uninstalled first, losing its settings. The GitHub secret is a
+working copy, not a backup; it cannot be read back out.
+
+Without those secrets, `assembleRelease` still works locally and produces an unsigned APK rather
+than failing, which keeps the release build path testable without the key.
+
 ## Colour ramp
 
 | UV index | Colour | |
