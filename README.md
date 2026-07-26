@@ -2,7 +2,10 @@
 
 A small Android home-screen widget showing the predicted UV index for your current location.
 
-The widget is a single coloured tile with the UV index in black:
+The widget is a single coloured tile with the UV index in black, captioned "UV Index" so the
+number is not left to speak for itself on a home screen full of other numbers. The number
+auto-sizes to whatever height the caption leaves, so resizing the widget still fills it. The tile's
+colour is the reading:
 
 - **Blue** while the sun is below the horizon.
 - **Green → yellow → orange → red** through the day, as the UV index rises from low to extreme.

@@ -18,24 +18,50 @@
         android:scaleType="fitXY"
         android:src="@drawable/widget_background" />
 
-    <!--
-        Auto-sizing rather than a fixed size: the widget is resizable, and a two-digit index
-        at a fixed 32sp would be clipped in a single home-screen cell.
-    -->
-    <TextView
-        android:id="@+id/uv_value"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:autoSizeMaxTextSize="48sp"
-        android:autoSizeMinTextSize="12sp"
-        android:autoSizeStepGranularity="1sp"
-        android:autoSizeTextType="uniform"
-        android:gravity="center"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:padding="4dp"
-        android:text="@string/no_value"
-        android:textColor="@android:color/black"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:padding="4dp">
+
+        <!--
+            Auto-sizing rather than a fixed size: the widget is resizable, and a two-digit index
+            at a fixed 32sp would be clipped in a single home-screen cell. The number takes
+            whatever height the caption leaves, so it shrinks rather than crowding it.
+        -->
+        <TextView
+            android:id="@+id/uv_value"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:autoSizeMaxTextSize="48sp"
+            android:autoSizeMinTextSize="12sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/no_value"
+            android:textColor="@android:color/black"
+            android:textStyle="bold" />
+
+        <!--
+            A fixed size, not auto-sizing: auto-sizing needs a bounded height to measure against,
+            and this caption is deliberately as small as it can be read at.
+        -->
+        <TextView
+            android:id="@+id/uv_caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/widget_label"
+            android:textColor="@android:color/black"
+            android:textSize="10sp" />
+
+    </LinearLayout>
 
 </FrameLayout>
