@@ -27,8 +27,8 @@ android {
         targetSdk = 35
         // Bump both when releasing: the tag must match versionName, and versionCode is what
         // Android compares when deciding whether one build is newer than another.
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     buildFeatures {
